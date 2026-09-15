@@ -42,7 +42,7 @@ src/
 |------|----------|----------------------|------|
 | 1 | 表格显示图书、添加图书 | 点"添加一本书"试试，对比表格和状态栏 | ✅ 已解决 |
 | 2 | 编辑图书、右侧书名列表（共享同一模型） | 在表格里改书名，看看右边的列表（先别动鼠标） | ✅ 已解决 |
-| 3 | 删除选中的书（支持多选） | 删一本没问题；多加几本书，用 Ctrl 选中**多行**再删，核对删掉的是不是你选的 | 🐛 待解决 |
+| 3 | 删除选中的书（支持多选） | 删一本没问题；多加几本书，用 Ctrl 选中**多行**再删，核对删掉的是不是你选的 | ✅ 已解决 |
 
 > 每关的原因分析和修复方法会在解决后补充到下面的「通关记录」中，
 > 也可以在 git 历史里查看每一关的 bug 提交和修复提交。
@@ -97,3 +97,44 @@ return true;
 - 前两个参数是变化区域的左上角和右下角（闭区间）；批量修改时发一次大范围的信号，比逐个单元格发更高效。
 - 第三个参数 `roles` 可选，写明哪些角色变了，视图和代理模型可以据此少做工作；不写表示所有角色都可能变了。
 - 自定义信号（如 `bookCountChanged`）视图是不认识的，视图只监听 `QAbstractItemModel` 的标准信号。
+
+### 第 3 关：循环删除多行时 QModelIndex 失效
+
+**现象：** 只删一本没问题；选中多行一起删，删掉的书和选中的对不上，选中末尾几行时有的删不掉。
+
+**原因：** `selectedRows()` 在循环前一次性拿到所有索引，然后一本一本删。
+删掉前面的一行后，后面所有行都往上挪了一位，但列表里那些 `QModelIndex` 记录的还是旧行号。
+
+以 5 本书 A B C D E、选中 A C E（行 0、2、4）为例：
+
+| 步骤 | 删除行号 | 实际删掉 | 剩下 |
+|------|----------|----------|------|
+| 1 | 0 | A ✅ | B C D E |
+| 2 | 2 | **D** ❌（C 已经挪到第 1 行） | B C E |
+| 3 | 4 | 越界，`removeRows` 返回 false | B C E |
+
+**`QModelIndex` 是"一次性"的**：模型结构一旦变化（增删行、排序等），之前拿到的 `QModelIndex` 就不可靠了，不要保存它。
+
+**修复（本项目采用）：** 先取出行号，**从大到小**删，删下面的行不影响上面的行号。
+注意 `selectedRows()` 返回的顺序是**用户选择的顺序**，不一定有序，必须自己排序。
+
+```cpp
+QList<int> rows;
+for (const QModelIndex &index : selected)
+    rows.append(index.row());
+std::sort(rows.begin(), rows.end(), std::greater<int>());
+for (int row : rows)
+    m_model->removeRows(row, 1);
+```
+
+**另一种修法：** 用 `QPersistentModelIndex`。它会在模型发出 `rowsRemoved` 等信号时自动更新行号：
+
+```cpp
+QList<QPersistentModelIndex> persistent;
+for (const QModelIndex &index : selected)
+    persistent.append(index);
+for (const QPersistentModelIndex &index : persistent)
+    m_model->removeRows(index.row(), 1);
+```
+
+它能自动更新的前提，正是模型正确调用了 `beginRemoveRows()` / `endRemoveRows()`（第 1 关）。

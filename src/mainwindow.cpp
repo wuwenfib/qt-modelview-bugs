@@ -12,6 +12,9 @@
 #include <QTableView>
 #include <QVBoxLayout>
 
+#include <algorithm>
+#include <functional>
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
 {
@@ -84,8 +87,15 @@ void MainWindow::removeSelectedBooks()
 {
     const QModelIndexList selected = m_tableView->selectionModel()->selectedRows();
 
+    QList<int> rows;
     for (const QModelIndex &index : selected)
-        m_model->removeRows(index.row(), 1);
+        rows.append(index.row());
+
+    // 从下往上删：删掉下面的行不会影响上面行的行号
+    std::sort(rows.begin(), rows.end(), std::greater<int>());
+
+    for (int row : rows)
+        m_model->removeRows(row, 1);
 }
 
 void MainWindow::updateStatus(int count)
