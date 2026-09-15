@@ -62,6 +62,9 @@ QVariant BookModel::headerData(int section, Qt::Orientation orientation, int rol
 
 void BookModel::addBook(const Book &book)
 {
+    const int row = m_books.size();
+    beginInsertRows(QModelIndex(), row, row);
     m_books.append(book);
+    endInsertRows();
     emit bookCountChanged(m_books.size());
 }

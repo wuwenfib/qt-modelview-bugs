@@ -34,11 +34,32 @@ src/
 
 | 关卡 | 新增功能 | 你要找的现象（提示） | 状态 |
 |------|----------|----------------------|------|
-| 1 | 表格显示图书、添加图书 | 点"添加一本书"试试，对比表格和状态栏 | 🐛 待解决 |
+| 1 | 表格显示图书、添加图书 | 点"添加一本书"试试，对比表格和状态栏 | ✅ 已解决 |
 
 > 每关的原因分析和修复方法会在解决后补充到下面的「通关记录」中，
 > 也可以在 git 历史里查看每一关的 bug 提交和修复提交。
 
 ## 通关记录
 
-（暂无）
+### 第 1 关：插入数据没有通知视图
+
+**现象：** 点"添加一本书"，状态栏的数量在增加，表格却一直只有最初那 3 行。
+
+**原因：** `addBook()` 只往 `m_books` 里追加了数据，没有告诉视图"行数变了"。
+视图不会主动轮询 `rowCount()`，它只在收到模型信号（`rowsInserted` 等）时才更新自己缓存的行数
+（`QHeaderView` 里的 section 数量）。数据变了、信号没发，视图就不知道。
+
+**修复：** 修改数据前后用 `beginInsertRows()` / `endInsertRows()` 包起来：
+
+```cpp
+const int row = m_books.size();
+beginInsertRows(QModelIndex(), row, row);   // 先声明：将在第 row 行插入 1 行
+m_books.append(book);                       // 再改数据
+endInsertRows();                            // 最后通知：插入完成（发出 rowsInserted）
+```
+
+**要点：**
+- `begin` 必须在改数据**之前**调用：视图和代理模型需要在变化前做准备（例如更新持久索引 `QPersistentModelIndex`）。
+- `first` / `last` 都是**闭区间**，插入 1 行时两者相等。
+- 同类函数：`beginRemoveRows`、`beginInsertColumns`、`beginMoveRows`、`beginResetModel`，规则相同。
+- 不要自己 `emit rowsInserted(...)`，这个信号是私有的，只能由 `endInsertRows()` 发出。
