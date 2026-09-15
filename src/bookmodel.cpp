@@ -96,6 +96,19 @@ bool BookModel::setData(const QModelIndex &index, const QVariant &value, int rol
     return true;
 }
 
+bool BookModel::removeRows(int row, int count, const QModelIndex &parent)
+{
+    if (parent.isValid() || row < 0 || count <= 0 || row + count > m_books.size())
+        return false;
+
+    beginRemoveRows(parent, row, row + count - 1);
+    m_books.remove(row, count);
+    endRemoveRows();
+
+    emit bookCountChanged(m_books.size());
+    return true;
+}
+
 void BookModel::addBook(const Book &book)
 {
     const int row = m_books.size();

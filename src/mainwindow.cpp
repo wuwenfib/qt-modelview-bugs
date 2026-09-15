@@ -3,6 +3,7 @@
 
 #include <QHBoxLayout>
 #include <QHeaderView>
+#include <QItemSelectionModel>
 #include <QLabel>
 #include <QListView>
 #include <QPushButton>
@@ -44,14 +45,19 @@ MainWindow::MainWindow(QWidget *parent)
     auto *addButton = new QPushButton(QStringLiteral("添加一本书"));
     connect(addButton, &QPushButton::clicked, this, &MainWindow::addSampleBook);
 
+    auto *removeButton = new QPushButton(QStringLiteral("删除选中的书"));
+    connect(removeButton, &QPushButton::clicked, this, &MainWindow::removeSelectedBooks);
+
     auto *buttonLayout = new QHBoxLayout;
     buttonLayout->addWidget(addButton);
+    buttonLayout->addWidget(removeButton);
     buttonLayout->addStretch();
 
     auto *central = new QWidget;
     auto *layout = new QVBoxLayout(central);
     layout->addLayout(buttonLayout);
-    layout->addWidget(new QLabel(QStringLiteral("双击表格单元格可以编辑书名、作者、年份")));
+    layout->addWidget(new QLabel(
+        QStringLiteral("双击表格单元格可以编辑书名、作者、年份；按住 Ctrl 或 Shift 可以选中多行")));
     layout->addWidget(splitter, 1);
     setCentralWidget(central);
 
@@ -72,6 +78,14 @@ void MainWindow::addSampleBook()
 
     m_model->addBook(samples.at(m_nextSample));
     m_nextSample = (m_nextSample + 1) % samples.size();
+}
+
+void MainWindow::removeSelectedBooks()
+{
+    const QModelIndexList selected = m_tableView->selectionModel()->selectedRows();
+
+    for (const QModelIndex &index : selected)
+        m_model->removeRows(index.row(), 1);
 }
 
 void MainWindow::updateStatus(int count)

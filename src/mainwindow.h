@@ -16,6 +16,7 @@ public:
 
 private slots:
     void addSampleBook();
+    void removeSelectedBooks();
     void updateStatus(int count);
 
 private:
