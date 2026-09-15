@@ -4,7 +4,9 @@
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QLabel>
+#include <QListView>
 #include <QPushButton>
+#include <QSplitter>
 #include <QStatusBar>
 #include <QTableView>
 #include <QVBoxLayout>
@@ -21,6 +23,24 @@ MainWindow::MainWindow(QWidget *parent)
     m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableView->horizontalHeader()->setStretchLastSection(true);
 
+    // 第二个视图：和表格共用同一个模型，只显示书名列
+    m_titleListView = new QListView;
+    m_titleListView->setModel(m_model);
+    m_titleListView->setModelColumn(BookModel::TitleColumn);
+    m_titleListView->setEditTriggers(QAbstractItemView::NoEditTriggers);
+
+    auto *listPanel = new QWidget;
+    auto *listLayout = new QVBoxLayout(listPanel);
+    listLayout->setContentsMargins(0, 0, 0, 0);
+    listLayout->addWidget(new QLabel(QStringLiteral("书名一览（共享同一个模型）")));
+    listLayout->addWidget(m_titleListView);
+
+    auto *splitter = new QSplitter;
+    splitter->addWidget(m_tableView);
+    splitter->addWidget(listPanel);
+    splitter->setStretchFactor(0, 3);
+    splitter->setStretchFactor(1, 1);
+
     auto *addButton = new QPushButton(QStringLiteral("添加一本书"));
     connect(addButton, &QPushButton::clicked, this, &MainWindow::addSampleBook);
 
@@ -31,7 +51,8 @@ MainWindow::MainWindow(QWidget *parent)
     auto *central = new QWidget;
     auto *layout = new QVBoxLayout(central);
     layout->addLayout(buttonLayout);
-    layout->addWidget(m_tableView);
+    layout->addWidget(new QLabel(QStringLiteral("双击表格单元格可以编辑书名、作者、年份")));
+    layout->addWidget(splitter);
     setCentralWidget(central);
 
     m_statusLabel = new QLabel;

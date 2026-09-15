@@ -3,6 +3,7 @@
 #include <QMainWindow>
 
 class QLabel;
+class QListView;
 class QTableView;
 class BookModel;
 
@@ -20,6 +21,7 @@ private slots:
 private:
     BookModel *m_model = nullptr;
     QTableView *m_tableView = nullptr;
+    QListView *m_titleListView = nullptr;
     QLabel *m_statusLabel = nullptr;
     int m_nextSample = 0;
 };

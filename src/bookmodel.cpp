@@ -31,7 +31,7 @@ QVariant BookModel::data(const QModelIndex &index, int role) const
 
     const Book &book = m_books.at(index.row());
 
-    if (role == Qt::DisplayRole) {
+    if (role == Qt::DisplayRole || role == Qt::EditRole) {
         switch (index.column()) {
         case TitleColumn:  return book.title;
         case AuthorColumn: return book.author;
@@ -58,6 +58,41 @@ QVariant BookModel::headerData(int section, Qt::Orientation orientation, int rol
     case ReadColumn:   return QStringLiteral("已读");
     }
     return {};
+}
+
+Qt::ItemFlags BookModel::flags(const QModelIndex &index) const
+{
+    if (!index.isValid())
+        return Qt::NoItemFlags;
+
+    Qt::ItemFlags f = QAbstractTableModel::flags(index);
+    if (index.column() != ReadColumn)
+        f |= Qt::ItemIsEditable;
+    return f;
+}
+
+bool BookModel::setData(const QModelIndex &index, const QVariant &value, int role)
+{
+    if (!index.isValid() || index.row() >= m_books.size() || role != Qt::EditRole)
+        return false;
+
+    Book &book = m_books[index.row()];
+
+    switch (index.column()) {
+    case TitleColumn:
+        book.title = value.toString();
+        break;
+    case AuthorColumn:
+        book.author = value.toString();
+        break;
+    case YearColumn:
+        book.year = value.toInt();
+        break;
+    default:
+        return false;
+    }
+
+    return true;
 }
 
 void BookModel::addBook(const Book &book)
