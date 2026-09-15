@@ -5,8 +5,10 @@
 #include <QHeaderView>
 #include <QItemSelectionModel>
 #include <QLabel>
+#include <QLineEdit>
 #include <QListView>
 #include <QPushButton>
+#include <QSortFilterProxyModel>
 #include <QSplitter>
 #include <QStatusBar>
 #include <QTableView>
@@ -22,12 +24,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     m_model = new BookModel(this);
 
+    // 代理模型：给表格提供排序和搜索过滤
+    m_proxyModel = new QSortFilterProxyModel(this);
+    m_proxyModel->setSourceModel(m_model);
+    m_proxyModel->setFilterKeyColumn(-1); // 在所有列里搜索
+    m_proxyModel->setFilterCaseSensitivity(Qt::CaseInsensitive);
+
     m_tableView = new QTableView;
-    m_tableView->setModel(m_model);
+    m_tableView->setModel(m_proxyModel);
     m_tableView->setSelectionBehavior(QAbstractItemView::SelectRows);
     m_tableView->horizontalHeader()->setStretchLastSection(true);
+    m_tableView->horizontalHeader()->setSortIndicator(-1, Qt::AscendingOrder);
+    m_tableView->setSortingEnabled(true);
 
-    // 第二个视图：和表格共用同一个模型，只显示书名列
+    // 第二个视图：直接使用源模型，显示书在模型里的原始顺序
     m_titleListView = new QListView;
     m_titleListView->setModel(m_model);
     m_titleListView->setModelColumn(BookModel::TitleColumn);
@@ -36,7 +46,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *listPanel = new QWidget;
     auto *listLayout = new QVBoxLayout(listPanel);
     listLayout->setContentsMargins(0, 0, 0, 0);
-    listLayout->addWidget(new QLabel(QStringLiteral("书名一览（共享同一个模型）")));
+    listLayout->addWidget(new QLabel(QStringLiteral("书名一览（源模型，原始顺序）")));
     listLayout->addWidget(m_titleListView);
 
     auto *splitter = new QSplitter;
@@ -56,11 +66,18 @@ MainWindow::MainWindow(QWidget *parent)
     buttonLayout->addWidget(removeButton);
     buttonLayout->addStretch();
 
+    auto *searchEdit = new QLineEdit;
+    searchEdit->setPlaceholderText(QStringLiteral("搜索书名、作者、年份…"));
+    searchEdit->setClearButtonEnabled(true);
+    connect(searchEdit, &QLineEdit::textChanged,
+            m_proxyModel, &QSortFilterProxyModel::setFilterFixedString);
+    buttonLayout->addWidget(searchEdit);
+
     auto *central = new QWidget;
     auto *layout = new QVBoxLayout(central);
     layout->addLayout(buttonLayout);
     layout->addWidget(new QLabel(
-        QStringLiteral("双击表格单元格可以编辑书名、作者、年份；按住 Ctrl 或 Shift 可以选中多行")));
+        QStringLiteral("双击单元格编辑；Ctrl/Shift 多选；点击表头排序")));
     layout->addWidget(splitter, 1);
     setCentralWidget(central);
 

@@ -4,6 +4,7 @@
 
 class QLabel;
 class QListView;
+class QSortFilterProxyModel;
 class QTableView;
 class BookModel;
 
@@ -21,6 +22,7 @@ private slots:
 
 private:
     BookModel *m_model = nullptr;
+    QSortFilterProxyModel *m_proxyModel = nullptr;
     QTableView *m_tableView = nullptr;
     QListView *m_titleListView = nullptr;
     QLabel *m_statusLabel = nullptr;
