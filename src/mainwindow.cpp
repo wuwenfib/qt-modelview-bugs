@@ -52,7 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
     auto *layout = new QVBoxLayout(central);
     layout->addLayout(buttonLayout);
     layout->addWidget(new QLabel(QStringLiteral("双击表格单元格可以编辑书名、作者、年份")));
-    layout->addWidget(splitter);
+    layout->addWidget(splitter, 1);
     setCentralWidget(central);
 
     m_statusLabel = new QLabel;

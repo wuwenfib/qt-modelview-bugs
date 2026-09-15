@@ -21,6 +21,12 @@ cmake --build build
 ./build/BookShelf.exe
 ```
 
+## 常见问题
+
+- **年份显示成「〇〈〉」之类的怪字符**：这不是关卡 bug，而是 Windows「区域 → 其他设置 → 本地数字」
+  被设置成了中文数字。委托（`QStyledItemDelegate`）会按区域格式化数字，Qt 假设数字字符是连续编码的，
+  中文数字不满足，于是显示错乱。`main.cpp` 里已用 `QLocale::setDefault()` 固定为中文(中国)格式规避。
+
 ## 项目结构
 
 ```
