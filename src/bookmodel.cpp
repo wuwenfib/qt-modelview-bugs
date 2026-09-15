@@ -92,6 +92,7 @@ bool BookModel::setData(const QModelIndex &index, const QVariant &value, int rol
         return false;
     }
 
+    emit dataChanged(index, index, {Qt::DisplayRole, Qt::EditRole});
     return true;
 }
 
